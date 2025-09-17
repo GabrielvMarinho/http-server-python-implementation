@@ -1,7 +1,6 @@
 import socket
 import os
 
-
 class HTTPException(Exception):
     def __init__(self, args, status):
         super().__init__(args)
@@ -12,11 +11,15 @@ class HTTPRequest:
         array_of_splitted_string = list(filter(None, str.split(request_string.decode("UTF-8"), ("\r\n"))))
         self.request_line = array_of_splitted_string[0]
         self.headers = array_of_splitted_string[1:len(array_of_splitted_string)]
+
     def get_method(self):
         return str.split(self.request_line, " ")[0]
+    
+    def get_endpoint(self):
+        return str.split(self.request_line, " ")[1]
 
 class HTTPResponse:
-    def __init__(self, message, status):
+    def __init__(self, message, status, html_content):
         self.http_spec = "HTTP/1.1"
         self.status = status
         self.message = message
@@ -31,7 +34,7 @@ class HTTPResponse:
     <title>{self.status} {self.message}</title>
 </head>
 <body>
-    <h1>{self.status} {self.message}</h1>
+    {html_content}
 </body>
 </html>
 """
@@ -62,33 +65,43 @@ class HTTPServer:
                 msg = socket.recv(1024)
                 http_request = HTTPRequest(msg)
                 if hasattr(self, f'handle_{http_request.get_method()}'):
-                    print("method implemented")
+                    http_response = getattr(HTTPServer, f'handle_{http_request.get_method()}')(self, http_request)
+                    socket.send(http_response.__str__().encode())
                 else:
                     raise HTTPException("Method not allowed", "405")
-                # file_system_nodes = self.get_file_system_nodes()
-                # print(f"Request received: {socket.recv(1024)}")
-                # string_to_return = ""
-                # string_to_return = string_to_return+"HTTP/1.1 200\r\n\r\n"
-                # string_to_return = string_to_return+"<!DOCTYPE HTML>"
-                # string_to_return = string_to_return+"<html lang='en'>"
-                # string_to_return = string_to_return+"<head>"
-                # string_to_return = string_to_return+"<meta charset='utf-8'>"
-                # string_to_return = string_to_return+"</head>"
-                # string_to_return = string_to_return+"<body>"
-                # string_to_return = string_to_return+"<h1>Server response</h1>"
-                # string_to_return = string_to_return+"</body>"
-                # string_to_return = string_to_return+"</html>"
-                # string_to_return = bytes(string_to_return.encode())
-                
             except HTTPException as e:
-                response = HTTPResponse(e.args[0], e.status)
-                socket.send(response.__str__().encode("UTF-8"))
+                http_response = HTTPResponse(e.args[0], e.status, f"<h1>{e.status} {e.args[0]}</h1>")
+                socket.send(http_response.__str__().encode())
 
             finally:
                 socket.close()
+
+    def handle_GET(self, http_request: HTTPRequest) -> str:
+        endpoint = http_request.get_endpoint()
+        nodes = self.get_file_system_nodes(endpoint if endpoint !="/" else None)
+        html_list = "<ol>"
+        for node, node_type in nodes.items():
+            print(node)
+
+            if(node_type == self.FOLDER):
+                html_list = html_list+f"<li>{node}/</li>"
+            else:
+                html_list = html_list+f"<li>{node}</li>"
+        html_list = html_list+ "</ol>"
+        html_content = f"""
+<div>
+<h1>{endpoint}</h1>
+<ol>
+{html_list}
+</ol>
+<div/>
+
+"""
+        return HTTPResponse(status="200", message="OK", html_content=html_content)
+    
     def get_file_system_nodes(self, path=None):
-        return [{dir:self.FOLDER} if os.path.isdir(dir) else {dir:self.FILE}
-                                        for dir in sorted(os.listdir(path))]
+        return {dir:self.FOLDER if os.path.isdir(dir) else {dir:self.FILE}
+                                        for dir in sorted(os.listdir(path))}
         
 if __name__ == "__main__":
     HTTPServer()
