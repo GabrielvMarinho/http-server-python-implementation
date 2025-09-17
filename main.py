@@ -78,11 +78,12 @@ class HTTPServer:
 
     def handle_GET(self, http_request: HTTPRequest) -> str:
         endpoint = http_request.get_endpoint()
-        nodes = self.get_file_system_nodes(endpoint if endpoint !="/" else None)
+        dir = endpoint[1:len(endpoint)]
+        nodes = self.get_file_system_nodes(dir if dir!="" else None)
         html_list = "<ol>"
-        for node, node_type in nodes.items():
-            print(node)
-
+        for node_obj in nodes:
+            print(node_obj.items())
+            [(node, node_type)] = node_obj.items()
             if(node_type == self.FOLDER):
                 html_list = html_list+f"<li>{node}/</li>"
             else:
@@ -100,8 +101,10 @@ class HTTPServer:
         return HTTPResponse(status="200", message="OK", html_content=html_content)
     
     def get_file_system_nodes(self, path=None):
-        return {dir:self.FOLDER if os.path.isdir(dir) else {dir:self.FILE}
-                                        for dir in sorted(os.listdir(path))}
+        if path == None:
+            path = os.getcwd()
+        return [{dir:self.FOLDER} if os.path.isdir(os.path.join(path, dir)) else {dir:self.FILE}
+                                        for dir in sorted(os.listdir(path))]
         
 if __name__ == "__main__":
     HTTPServer()
