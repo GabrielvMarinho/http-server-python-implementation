@@ -1,5 +1,5 @@
 class HTTPResponse:
-    def __init__(self, message, status, content_type, content):
+    def __init__(self, message :str, status :str, content_type :str, content :bytes):
         self.http_spec = "HTTP/1.1"
         self.status = status
         self.message = message
@@ -9,7 +9,7 @@ class HTTPResponse:
 
     def __str__(self):
         start_line = str.join(" ", [self.http_spec, self.status, self.message])
-        header = str.join("", [f"Content-Type: {self.content_type}\r\n", f"Server: {self.server}\r\n"])
+        header = f"Content-Type: {self.content_type}\r\n" + f"Server: {self.server}\r\n"
         body = self.content
         return bytes.join(b"\r\n", [start_line.encode(), header.encode(), body])
     

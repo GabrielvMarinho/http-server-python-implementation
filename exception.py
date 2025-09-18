@@ -1,4 +1,3 @@
-import http.server
 class HTTPException(Exception):
     def __init__(self, args, status):
         super().__init__(args)

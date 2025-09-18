@@ -1,4 +1,3 @@
-
 class HTTPRequest:
     def __init__(self, request_string):
         array_of_splitted_string = list(filter(None, str.split(request_string.decode("UTF-8"), ("\r\n"))))
