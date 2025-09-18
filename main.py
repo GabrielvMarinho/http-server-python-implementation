@@ -1,5 +1,6 @@
 import socket
 import os
+import mimetypes
 
 class HTTPException(Exception):
     def __init__(self, args, status):
@@ -24,14 +25,14 @@ class HTTPResponse:
         self.status = status
         self.message = message
         self.content_type = content_type
-        self.server = "Marinho's HTTP server"
+        self.server = "http-server"
         self.content = content
 
     def __str__(self):
         start_line = str.join(" ", [self.http_spec, self.status, self.message])
-        header = str.join("\r\n", [f"Content-Type: {self.content_type}", f"Server: {self.server}"])
+        header = str.join("", [f"Content-Type: {self.content_type}\r\n", f"Server: {self.server}\r\n"])
         body = self.content
-        return str.join("\r\n", [start_line, header, body])
+        return bytes.join(b"\r\n", [start_line.encode(), header.encode(), body])
     
 class HTTPServer:
     def __init__(self):
@@ -54,12 +55,12 @@ class HTTPServer:
                 http_request = HTTPRequest(msg)
                 if hasattr(self, f'handle_{http_request.get_method()}'):
                     http_response = getattr(HTTPServer, f'handle_{http_request.get_method()}')(self, http_request)
-                    socket.send(http_response.__str__().encode())
+                    socket.send(http_response.__str__())
                 else:
                     raise HTTPException("Method not allowed", "405")
             except HTTPException as e:
                 http_response = HTTPResponse(e.args[0], e.status, f"<h1>{e.status} {e.args[0]}</h1>")
-                socket.send(http_response.__str__().encode())
+                socket.send(http_response.__str__())
 
             finally:
                 socket.close()
@@ -97,12 +98,14 @@ class HTTPServer:
                         </body>
                         </html>
                         """
-            return HTTPResponse(status="200", message="OK", content_type="text/html", content=content)
+            return HTTPResponse(status="200", message="OK", content_type="text/html", content=content.encode())
 
         else:
             # return specific file
-            content = open(path).read()
-            return HTTPResponse(status="200", message="OK", content_type="text/plain", content=content)
+            content = open(path, "rb").read()
+            content_type, _ = mimetypes.guess_type(path)
+            
+            return HTTPResponse(status="200", message="OK", content_type=content_type, content=content)
 
 
         
