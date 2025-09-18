@@ -19,30 +19,18 @@ class HTTPRequest:
         return str.split(self.request_line, " ")[1]
 
 class HTTPResponse:
-    def __init__(self, message, status, html_content):
+    def __init__(self, message, status, content_type, content):
         self.http_spec = "HTTP/1.1"
         self.status = status
         self.message = message
-        self.content_type = "text/html"
+        self.content_type = content_type
         self.server = "Marinho's HTTP server"
-        self.html_content = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{self.status} {self.message}</title>
-</head>
-<body>
-    {html_content}
-</body>
-</html>
-"""
+        self.content = content
 
     def __str__(self):
         start_line = str.join(" ", [self.http_spec, self.status, self.message])
         header = str.join("\r\n", [f"Content-Type: {self.content_type}", f"Server: {self.server}"])
-        body = self.html_content
+        body = self.content
         return str.join("\r\n", [start_line, header, body])
     
 class HTTPServer:
@@ -78,31 +66,48 @@ class HTTPServer:
 
     def handle_GET(self, http_request: HTTPRequest) -> str:
         endpoint = http_request.get_endpoint()
-        dir = endpoint[1:len(endpoint)]
-        nodes = self.get_file_system_nodes(dir if dir!="" else None)
-        html_list = "<ol>"
-        for node_obj in nodes:
-            print(node_obj.items())
-            [(node, node_type)] = node_obj.items()
-            if(node_type == self.FOLDER):
-                html_list = html_list+f"<li>{node}/</li>"
-            else:
-                html_list = html_list+f"<li>{node}</li>"
-        html_list = html_list+ "</ol>"
-        html_content = f"""
-<div>
-<h1>{endpoint}</h1>
-<ol>
-{html_list}
-</ol>
-<div/>
 
-"""
-        return HTTPResponse(status="200", message="OK", html_content=html_content)
+        path = os.getcwd() +endpoint[0:len(endpoint)]
+        if os.path.isdir(path):
+            # return list of files
+            nodes = self.get_file_system_nodes(path)
+            content = """
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>200 OK</title>
+                    </head>
+                    <body> 
+                    """
+            html_list = "<ol>"
+            for node_obj in nodes:
+                [(node, node_type)] = node_obj.items()
+                if(node_type == self.FOLDER):
+                    html_list = html_list+f"<li>{node}/</li>"
+                else:
+                    html_list = html_list+f"<li>{node}</li>"
+            html_list = html_list+ "</ol>"
+            content = f"""
+                        <div>
+                        <h1>{endpoint}</h1>
+                        {html_list}
+                        <div/>
+                        </body>
+                        </html>
+                        """
+            return HTTPResponse(status="200", message="OK", content_type="text/html", content=content)
+
+        else:
+            # return specific file
+            content = open(path).read()
+            return HTTPResponse(status="200", message="OK", content_type="text/plain", content=content)
+
+
+        
     
-    def get_file_system_nodes(self, path=None):
-        if path == None:
-            path = os.getcwd()
+    def get_file_system_nodes(self, path):
         return [{dir:self.FOLDER} if os.path.isdir(os.path.join(path, dir)) else {dir:self.FILE}
                                         for dir in sorted(os.listdir(path))]
         
