@@ -1,39 +1,10 @@
 import socket
 import os
 import mimetypes
+from exception import HTTPException
+from request import HTTPRequest
+from response import HTTPResponse
 
-class HTTPException(Exception):
-    def __init__(self, args, status):
-        super().__init__(args)
-        self.status = status
-
-class HTTPRequest:
-    def __init__(self, request_string):
-        array_of_splitted_string = list(filter(None, str.split(request_string.decode("UTF-8"), ("\r\n"))))
-        self.request_line = array_of_splitted_string[0]
-        self.headers = array_of_splitted_string[1:len(array_of_splitted_string)]
-
-    def get_method(self):
-        return str.split(self.request_line, " ")[0]
-    
-    def get_endpoint(self):
-        return str.split(self.request_line, " ")[1]
-
-class HTTPResponse:
-    def __init__(self, message, status, content_type, content):
-        self.http_spec = "HTTP/1.1"
-        self.status = status
-        self.message = message
-        self.content_type = content_type
-        self.server = "http-server"
-        self.content = content
-
-    def __str__(self):
-        start_line = str.join(" ", [self.http_spec, self.status, self.message])
-        header = str.join("", [f"Content-Type: {self.content_type}\r\n", f"Server: {self.server}\r\n"])
-        body = self.content
-        return bytes.join(b"\r\n", [start_line.encode(), header.encode(), body])
-    
 class HTTPServer:
     def __init__(self):
         self.PORT = 8000
