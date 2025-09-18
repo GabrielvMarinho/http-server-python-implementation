@@ -57,9 +57,9 @@ class HTTPServer:
             for node_obj in nodes:
                 [(node, node_type)] = node_obj.items()
                 if(node_type == self.FOLDER):
-                    html_list = html_list+f"<li>{node}/</li>"
+                    html_list = html_list+f"<li><a href='{endpoint+"/"+node}'>{node}/</a></li>"
                 else:
-                    html_list = html_list+f"<li>{node}</li>"
+                    html_list = html_list+f"<li><a href='{endpoint+"/"+node}'>{node}</a></li>"
             html_list = html_list+ "</ol>"
             content = f"""
                         <div>
