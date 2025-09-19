@@ -20,7 +20,7 @@ class HTTPServer:
     def listen_forever(self):
         print(f"Server started on port {self.PORT}")
         while True:
-            socket, address = self.tcp_listener.accept()
+            socket, _ = self.tcp_listener.accept()
             try:
                 msg = socket.recv(1024)
                 http_request = HTTPRequest(msg)
@@ -57,9 +57,9 @@ class HTTPServer:
             for node_obj in nodes:
                 [(node, node_type)] = node_obj.items()
                 if(node_type == self.FOLDER):
-                    html_list = html_list+f"<li><a href='{endpoint+"/"+node}'>{node}/</a></li>"
+                    html_list = html_list+f"<li><a href='{endpoint+("/" if endpoint != "/" else "")+node}'>{node}/</a></li>"
                 else:
-                    html_list = html_list+f"<li><a href='{endpoint+"/"+node}'>{node}</a></li>"
+                    html_list = html_list+f"<li><a href='{endpoint+ ("/" if endpoint != "/" else "")+node}'>{node}</a></li>"
             html_list = html_list+ "</ol>"
             content = f"""
                         <div>
