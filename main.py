@@ -54,16 +54,22 @@ class HTTPServer:
                     <body> 
                     """
             html_list = "<ol>"
+            if endpoint != "/":
+                list_endpoint = str.split(endpoint, "/")
+                list_endpoint = list_endpoint[1:len(list_endpoint)-1]
+                endpoint_to_go_back = "/"+"/".join(str(item) for item in list_endpoint)
+                html_list = html_list + f"<li style='list-style-type:none'><a href='{endpoint_to_go_back}'>../</a></li>"
+            
             for node_obj in nodes:
                 [(node, node_type)] = node_obj.items()
                 if(node_type == self.FOLDER):
-                    html_list = html_list+f"<li><a href='{endpoint+("/" if endpoint != "/" else "")+node}'>{node}/</a></li>"
+                    html_list = html_list+f"<li style='list-style-type:none'><a href='{endpoint+("/" if endpoint != "/" else "")+node}'>{node}/</a></li>"
                 else:
-                    html_list = html_list+f"<li><a href='{endpoint+ ("/" if endpoint != "/" else "")+node}'>{node}</a></li>"
+                    html_list = html_list+f"<li style='list-style-type:none'><a href='{endpoint+ ("/" if endpoint != "/" else "")+node}'>{node}</a></li>"
             html_list = html_list+ "</ol>"
             content = f"""
                         <div>
-                        <h1>{endpoint}</h1>
+                        <h1>{endpoint}</h1>        
                         {html_list}
                         <div/>
                         </body>
@@ -77,9 +83,6 @@ class HTTPServer:
             content_type, _ = mimetypes.guess_type(path)
             
             return HTTPResponse(status="200", message="OK", content_type=content_type, content=content)
-
-
-        
     
     def get_file_system_nodes(self, path):
         return [{dir:self.FOLDER} if os.path.isdir(os.path.join(path, dir)) else {dir:self.FILE}
