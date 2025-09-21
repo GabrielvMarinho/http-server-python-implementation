@@ -20,8 +20,8 @@ class HTTPServer:
     def listen_forever(self):
         print(f"Server started on port {self.PORT}")
         while True:
-            socket, _ = self.tcp_listener.accept()
             try:
+                socket, _ = self.tcp_listener.accept()
                 msg = socket.recv(1024)
                 http_request = HTTPRequest(msg)
                 if hasattr(self, f'handle_{http_request.get_method()}'):
@@ -32,6 +32,10 @@ class HTTPServer:
             except HTTPException as e:
                 http_response = HTTPResponse(e.args[0], e.status, f"<h1>{e.status} {e.args[0]}</h1>")
                 socket.send(http_response.__str__())
+            except Exception as e:
+                socket.send(HTTPResponse(content="<h1>Something went wrong</h1>".encode(), content_type="text/html", message="Something went wrong", status="400").__str__())
+
+                print("Error ocurred: ", e)
 
             finally:
                 socket.close()
