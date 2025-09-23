@@ -10,6 +10,7 @@ class HTTPServer:
         self.PORT = 8000
         self.FILE = "FILE"
         self.FOLDER = "FOLDER"
+        # creates a tcp socket over ipv4
         self.tcp_listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # take out 1 minute timeout from the socket after closed
         self.tcp_listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -22,8 +23,14 @@ class HTTPServer:
         while True:
             try:
                 socket, _ = self.tcp_listener.accept()
-                msg = socket.recv(1024)
-                http_request = HTTPRequest(msg)
+
+                msg_buffer = b""
+                #receiving each 16 bytes and storing in a buffer
+                while b"\r\n\r\n" not in msg_buffer:
+                    data = socket.recv(16)
+                    msg_buffer = msg_buffer+ data                
+
+                http_request = HTTPRequest(msg_buffer)
                 if hasattr(self, f'handle_{http_request.get_method()}'):
                     http_response = getattr(HTTPServer, f'handle_{http_request.get_method()}')(self, http_request)
                     socket.send(http_response.__str__())
