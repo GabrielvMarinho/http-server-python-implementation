@@ -66,25 +66,25 @@ class HTTPServer:
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <title>200 OK</title>
                     </head>
-                    <body> 
+                    <body style="background-color: #202020"> 
                     """
-            html_list = "<ol>"
+            html_list = "<ol style='display:flex; flex-direction:column; gap:10px'>"
             if endpoint != "/":
                 list_endpoint = str.split(endpoint, "/")
                 list_endpoint = list_endpoint[1:len(list_endpoint)-1]
                 endpoint_to_go_back = "/"+"/".join(str(item) for item in list_endpoint)
-                html_list = html_list + f"<li style='list-style-type:none'><a href='{endpoint_to_go_back}'>../</a></li>"
+                html_list = html_list + f"<li style='list-style-type:none'><a style='text-decoration:none; font-size:24px; color:white' href='{endpoint_to_go_back}'>../</a></li>"
             
             for node_obj in nodes:
                 [(node, node_type)] = node_obj.items()
                 if(node_type == self.FOLDER):
-                    html_list = html_list+f"<li style='list-style-type:none'><a href='{endpoint+("/" if endpoint != "/" else "")+node}'>{node}/</a></li>"
+                    html_list = html_list+f"<li style='list-style-type:none'><a style='text-decoration:none; font-size:24px; color:white' href='{endpoint+("/" if endpoint != "/" else "")+node}'>{node}/</a></li>"
                 else:
-                    html_list = html_list+f"<li style='list-style-type:none'><a href='{endpoint+ ("/" if endpoint != "/" else "")+node}'>{node}</a></li>"
+                    html_list = html_list+f"<li style='list-style-type:none'><a style='text-decoration:none; font-size:24px; color:white' href='{endpoint+ ("/" if endpoint != "/" else "")+node}'>{node}</a></li>"
             html_list = html_list+ "</ol>"
-            content = f"""
+            content = content+ f"""
                         <div>
-                        <h1>{endpoint}</h1>        
+                        <h1 style='margin:40px; color:white'>{endpoint}</h1>        
                         {html_list}
                         <div/>
                         </body>
