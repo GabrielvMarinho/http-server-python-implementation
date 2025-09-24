@@ -4,6 +4,7 @@ import mimetypes
 from exception import HTTPException
 from request import HTTPRequest
 from response import HTTPResponse
+from threading import Thread
 
 class HTTPServer:
     def __init__(self):
@@ -21,32 +22,35 @@ class HTTPServer:
     def listen_forever(self):
         print(f"Server started on port {self.PORT}")
         while True:
-            try:
-                socket, _ = self.tcp_listener.accept()
+            socket_, _ = self.tcp_listener.accept()
+            thread = Thread(target=self.handle_request, args=(socket_, ))
+            thread.start()
 
-                msg_buffer = b""
-                #receiving each 16 bytes and storing in a buffer
-                while b"\r\n\r\n" not in msg_buffer:
-                    data = socket.recv(16)
-                    msg_buffer = msg_buffer+ data                
+    def handle_request(self, socket_):
+        try:
+            msg_buffer = b""
+            #receiving each 16 bytes and storing in a buffer
+            while b"\r\n\r\n" not in msg_buffer:
+                data = socket_.recv(16)
+                msg_buffer = msg_buffer+ data                
 
-                http_request = HTTPRequest(msg_buffer)
-                if hasattr(self, f'handle_{http_request.get_method()}'):
-                    http_response = getattr(HTTPServer, f'handle_{http_request.get_method()}')(self, http_request)
-                    socket.send(http_response.__str__())
-                else:
-                    raise HTTPException("Method not allowed", "405")
-            except HTTPException as e:
-                http_response = HTTPResponse(e.args[0], e.status, f"<h1>{e.status} {e.args[0]}</h1>")
-                socket.send(http_response.__str__())
-            except Exception as e:
-                socket.send(HTTPResponse(content="<h1>Something went wrong</h1>".encode(), content_type="text/html", message="Something went wrong", status="400").__str__())
+            http_request = HTTPRequest(msg_buffer)
+            if hasattr(self, f'handle_{http_request.get_method()}'):
+                http_response = getattr(HTTPServer, f'handle_{http_request.get_method()}')(self, http_request)
+                socket_.send(http_response.__str__())
+            else:
+                raise HTTPException("Method not allowed", "405")
+        except HTTPException as e:
+            http_response = HTTPResponse(e.args[0], e.status, f"<h1>{e.status} {e.args[0]}</h1>")
+            socket_.send(http_response.__str__())
+        except Exception as e:
+            socket_.send(HTTPResponse(content="<h1>Something went wrong</h1>".encode(), content_type="text/html", message="Something went wrong", status="400").__str__())
 
-                print("Error ocurred: ", e)
+            print("Error ocurred: ", e)
 
-            finally:
-                socket.close()
-
+        finally:
+            socket_.close()
+        
     def handle_GET(self, http_request: HTTPRequest) -> str:
         endpoint = http_request.get_endpoint()
 
@@ -91,8 +95,7 @@ class HTTPServer:
         else:
             # return specific file
             content = open(path, "rb").read()
-            content_type, _ = mimetypes.guess_type(path)
-            
+            content_type, _ = mimetypes.guess_type(path)            
             return HTTPResponse(status="200", message="OK", content_type=content_type, content=content)
     
     def get_file_system_nodes(self, path):
